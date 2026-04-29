@@ -1,0 +1,151 @@
+package tp.classesinternes;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@FunctionalInterface
+interface ClickListener {
+    void onClick(int x, int y);
+}
+
+@FunctionalInterface
+interface KeyListener {
+    void onKeyPress(char touche);
+}
+
+@FunctionalInterface
+interface HoverListener {
+    void onHover(boolean entre);
+}
+
+class Bouton {
+
+    private final String label;
+    private final List<ClickListener> clickListeners = new ArrayList<>();
+    private final List<KeyListener>   keyListeners   = new ArrayList<>();
+    private final List<HoverListener> hoverListeners = new ArrayList<>();
+
+    public Bouton(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() { return label; }
+
+    public void addClickListener(ClickListener l)     { clickListeners.add(l); }
+    public void addKeyListener(KeyListener l)          { keyListeners.add(l); }
+    public void addHoverListener(HoverListener l)      { hoverListeners.add(l); }
+    public void removeClickListener(ClickListener l)   { clickListeners.remove(l); }
+    public void removeKeyListener(KeyListener l)       { keyListeners.remove(l); }
+    public void removeHoverListener(HoverListener l)   { hoverListeners.remove(l); }
+
+    public void simulerClic(int x, int y) {
+        System.out.println("[Bouton '" + label + "'] Clic en (" + x + ", " + y + ")");
+        for (ClickListener l : clickListeners) l.onClick(x, y);
+    }
+
+    public void simulerTouche(char c) {
+        System.out.println("[Bouton '" + label + "'] Touche : " + c);
+        for (KeyListener l : keyListeners) l.onKeyPress(c);
+    }
+
+    public void simulerSurvol(boolean entre) {
+        System.out.println("[Bouton '" + label + "'] Survol : " + (entre ? "entrée" : "sortie"));
+        for (HoverListener l : hoverListeners) l.onHover(entre);
+    }
+}
+
+public class SystemeEvenements {
+
+    public static void main(String[] args) {
+        Bouton btn = new Bouton("Valider");
+        final int[] compteur = {0};
+
+        btn.addClickListener(new ClickListener() {
+            @Override
+            public void onClick(int x, int y) {
+                System.out.println("  → [CL1] Clic détecté aux coordonnées (" + x + ", " + y + ")");
+            }
+        });
+
+        btn.addClickListener(new ClickListener() {
+            @Override
+            public void onClick(int x, int y) {
+                compteur[0]++;
+                System.out.println("  → [CL2] Nombre total de clics : " + compteur[0]);
+            }
+        });
+
+        btn.addKeyListener(new KeyListener() {
+            private static final String VOYELLES = "aeiouAEIOU";
+            @Override
+            public void onKeyPress(char touche) {
+                if (VOYELLES.indexOf(touche) >= 0) {
+                    System.out.println("  → [KL] '" + touche + "' est une voyelle.");
+                } else {
+                    System.out.println("  → [KL] '" + touche + "' est une consonne.");
+                }
+            }
+        });
+
+        btn.addHoverListener(new HoverListener() {
+            @Override
+            public void onHover(boolean entre) {
+                if (entre) {
+                    System.out.println("  → [HL] Info-bulle : \"Cliquez pour valider le formulaire\"");
+                } else {
+                    System.out.println("  → [HL] Info-bulle masquée.");
+                }
+            }
+        });
+
+        System.out.println("=== Simulation avec classes anonymes ===\n");
+        btn.simulerClic(150, 75);
+        btn.simulerClic(152, 76);
+        btn.simulerTouche('a');
+        btn.simulerTouche('k');
+        btn.simulerSurvol(true);
+        btn.simulerSurvol(false);
+
+        System.out.println("\n=== Simulation avec lambdas ===\n");
+        mainLambda(args);
+    }
+
+    public static void mainLambda(String[] args) {
+        Bouton btn = new Bouton("Valider");
+        final int[] compteur = {0};
+
+        btn.addClickListener((x, y) ->
+                System.out.println("  → [CL1-λ] Clic aux coordonnées (" + x + ", " + y + ")")
+        );
+
+        btn.addClickListener((x, y) -> {
+            compteur[0]++;
+            System.out.println("  → [CL2-λ] Total de clics : " + compteur[0]);
+        });
+
+        final String voyelles = "aeiouAEIOU";
+        btn.addKeyListener(touche ->
+                System.out.println("  → [KL-λ] '" + touche + "' est une "
+                        + (voyelles.indexOf(touche) >= 0 ? "voyelle" : "consonne") + ".")
+        );
+
+        btn.addHoverListener(entre ->
+                System.out.println("  → [HL-λ] "
+                        + (entre ? "Info-bulle : \"Cliquez pour valider\""
+                                 : "Info-bulle masquée."))
+        );
+
+        btn.simulerClic(150, 75);
+        btn.simulerTouche('e');
+        btn.simulerTouche('z');
+        btn.simulerSurvol(true);
+
+        System.out.println("\n=== Démonstration removeListener ===");
+        ClickListener listenerNommé = (x, y) ->
+                System.out.println("  → [CL-nommé] Ce listener peut être retiré.");
+        btn.addClickListener(listenerNommé);
+        btn.simulerClic(10, 10);
+        btn.removeClickListener(listenerNommé);
+        btn.simulerClic(10, 10);
+    }
+}
