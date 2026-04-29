@@ -1,0 +1,100 @@
+package tp.classesinternes;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+class Produit {
+
+    private final String nom;
+    private final String categorie;
+    private final double prix;
+    private final int quantite;
+
+    public Produit(String nom, String categorie, double prix, int quantite) {
+        this.nom       = nom;
+        this.categorie = categorie;
+        this.prix      = prix;
+        this.quantite  = quantite;
+    }
+
+    public String getNom()       { return nom; }
+    public String getCategorie() { return categorie; }
+    public double getPrix()      { return prix; }
+    public int getQuantite()     { return quantite; }
+
+    @Override
+    public String toString() {
+        return String.format("Produit{nom='%s', categorie='%s', prix=%.2f€, quantite=%d}",
+                nom, categorie, prix, quantite);
+    }
+}
+
+interface Filtre {
+    boolean accepter(Produit p);
+}
+
+public class GestionnaireStock {
+
+    private List<Produit> stock = new ArrayList<>();
+
+    public void ajouterProduit(Produit produit) {
+        stock.add(produit);
+    }
+
+    public List<Produit> filtrerEtTrier(String categorie, double prixMax, int quantiteMin) {
+
+        class FiltreCompose implements Filtre {
+            @Override
+            public boolean accepter(Produit p) {
+                return p.getCategorie().equalsIgnoreCase(categorie)
+                        && p.getPrix() <= prixMax
+                        && p.getQuantite() >= quantiteMin;
+            }
+        }
+
+        Filtre filtre = new FiltreCompose();
+        List<Produit> resultat = new ArrayList<>();
+
+        for (Produit p : stock) {
+            if (filtre.accepter(p)) {
+                resultat.add(p);
+            }
+        }
+
+        resultat.sort(Comparator.comparingDouble(Produit::getPrix));
+        return resultat;
+    }
+
+    public List<Produit> filtrerEtTrierStream(String categorie, double prixMax, int quantiteMin) {
+        return stock.stream()
+                .filter(p -> p.getCategorie().equalsIgnoreCase(categorie))
+                .filter(p -> p.getPrix() <= prixMax)
+                .filter(p -> p.getQuantite() >= quantiteMin)
+                .sorted(Comparator.comparingDouble(Produit::getPrix))
+                .collect(Collectors.toList());
+    }
+
+    public static void main(String[] args) {
+        GestionnaireStock gs = new GestionnaireStock();
+
+        gs.ajouterProduit(new Produit("Laptop Pro",       "Informatique", 1200.00, 5));
+        gs.ajouterProduit(new Produit("Souris sans fil",  "Informatique",   35.00, 20));
+        gs.ajouterProduit(new Produit("Clavier mécanique","Informatique",   89.99, 12));
+        gs.ajouterProduit(new Produit("Écran 27\"",       "Informatique",  349.00, 3));
+        gs.ajouterProduit(new Produit("Chaise ergonomique","Mobilier",     450.00, 8));
+        gs.ajouterProduit(new Produit("Bureau réglable",  "Mobilier",      299.00, 2));
+        gs.ajouterProduit(new Produit("Lampe de bureau",  "Mobilier",       49.90, 15));
+        gs.ajouterProduit(new Produit("Hub USB-C",        "Informatique",   29.99, 25));
+
+        System.out.println("=== Informatique <= 200€, quantité >= 10 ===");
+        gs.filtrerEtTrier("Informatique", 200.0, 10).forEach(System.out::println);
+
+        System.out.println("\n=== Mobilier <= 400€, quantité >= 5 ===");
+        gs.filtrerEtTrier("Mobilier", 400.0, 5).forEach(System.out::println);
+
+        System.out.println("\n=== Même résultat via Stream ===");
+        gs.filtrerEtTrierStream("Informatique", 200.0, 10).forEach(System.out::println);
+    }
+}
